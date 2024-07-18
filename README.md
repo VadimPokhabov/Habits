@@ -7,7 +7,6 @@ ____
 * Django
 * Django REST framework
 * Celery
-* Django-filter
 * Swagger
 * redoc
 * django-celery-beat
