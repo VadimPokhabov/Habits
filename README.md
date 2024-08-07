@@ -52,6 +52,121 @@ python manage.py ruserver
 ```
 -A base worker --beat --scheduler django --loglevel=info
 ```
+Запуск приложения через Docker:
+
+1. Повторить шаги 1-3
+2. Запустить Docker локально на машине
+3. Выполнить команду в терминале
+```
+docker compose up -d --build
+```
+Данная команда сразу создаст образ, и сбилдит его, т.е. запустит локально в Docker
+4. Переходим по ссылке http://localhost:8000/
+----
+Чтобы удалить контейнеры после работы с приложением используйте команду
+```
+docker-compose down
+```
+----
+Деплой приложения на удаленный сервер в ручном режиме.
+
+1. Необходимо установить зависимости на удаленный сервер
+```
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib python3-pip
+apt install gunicorn
+apt install nginx
+```
+2. Необходимо установить виртуальное окружение на удаленном сервере
+```
+python3 -m venv venv
+```
+3. Активировать виртуальное окружение
+```
+source venv/bin/activate
+```
+4. Скопировать свой проект на сервер
+```
+git clone <ssh вашего проекта с гит>
+```
+5. Установить все зависимости с файла requirements.txt
+```
+pip install -r requirements.txt
+```
+6. Настроить демон (gunicorn) на удаленном сервере yourproject.service и добавить данные в файл
+```
+[Unit]
+Description=gunicorn daemon for Your Project # Описание вашего сервиса
+After=network.target # Сервис, от которого будет зависеть запуск проекта
+
+[Service]
+User=yourusername # Имя пользователя владельца проекта в Linux
+Group=yourgroupname # Группа, к которой относится пользователь
+WorkingDirectory=/path/to/your/project # Путь к рабочей директории проекта
+ExecStart=/path/to/venv/bin/gunicorn --config /path/to/gunicorn_config.py your_project.wsgi:application
+# Команда для запуска проекта
+```
+7. Запустите сервис
+```
+sudo systemctl start yourproject
+```
+8. Настройка Nginx сервера для работы со статикой вашего проекта /etc/nginx/sites-available/my_site
+```
+server {
+    listen 80;
+    server_name <ip адрес или доменное имя сервера>;
+
+    location /static/ {
+			root /path/to/your/project/;
+    }
+
+    location /media/ {
+			root /path/to/your/project/;
+    }
+
+    location / {
+			include proxy_params;
+			proxy_pass /path/to/your/project/project.sock
+    }
+
+}
+```
+
+9. Командой nginx -t проверяйте корретность заполнения файла
+10. Подключите сайт к отображению
+```
+ln -s /etc/nginx/sites-available/my_site /etc/nginx/sites-enabled
+```
+11. Выполнить команду для определение статики проекта
+```
+python3 manage.py collectstatic
+```
+----
+Деплой приложения череез Docker на удаленный сервер
+
+1. Выполнить шаги 1,3,5,6,7,8
+2. Установить docker и docker-compose на удаленный сервер
+```
+apt install docker docker-compose
+```
+3. Выполнить команду
+```
+docker compose up -d --build
+```
+----
+Подключение CI/CD
+1. Регистрируемся на GitLab
+2. Клонируем проект себе в GitLab используя SSH ключ
+```
+git@github.com:VadimPokhabov/Habits.git
+```
+3. В разделе settings -> CI/CD -> Runners создаем runner
+4. В разделе settings -> CI/CD -> Variables создаем env файл для взаимодействия с проектом
+5. Выполнить установку у себя на удаленном сервере
+```
+curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
+sudo -E apt-get install gitlab-runner
+```
 ____
 ### Важно:
 ### При регистрации пользователя, необходимо указать свой ID телеграм. Иначе регистрация не получится.
